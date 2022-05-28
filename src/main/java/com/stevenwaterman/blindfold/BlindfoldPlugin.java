@@ -409,14 +409,14 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 					if (log.isDebugEnabled())
 					{
-						try
-						{
-							gl = new DebugGL4(gl);
-						}
-						catch (NoClassDefFoundError ex)
-						{
-							log.debug("Disabling DebugGL due to jogl-gldesktop-dbg not being present on the classpath");
-						}
+//						try
+//						{
+//							gl = new DebugGL4(gl);
+//						}
+//						catch (NoClassDefFoundError ex)
+//						{
+						log.debug("Disabling DebugGL due to jogl-gldesktop-dbg not being present on the classpath");
+//						}
 
 						gl.glEnable(gl.GL_DEBUG_OUTPUT);
 

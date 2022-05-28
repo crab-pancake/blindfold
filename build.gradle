@@ -23,13 +23,6 @@ dependencies {
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion, {
 		exclude group: 'ch.qos.logback', module: 'logback-classic'
 	}
-
-	implementation group: 'net.runelite.jogl', name:'jogl-rl', version:'2.4.0-rc-20220318'
-	implementation group: 'net.runelite.jogl', name:'jogl-gldesktop-dbg', version:'2.4.0-rc-20220318'
-	runtimeOnly group: 'net.runelite.jogl', name:'jogl-rl', version:'2.4.0-rc-20220318:natives-windows-amd64'
-	runtimeOnly group: 'net.runelite.jogl', name:'jogl-rl', version:'2.4.0-rc-20220318:natives-windows-i586'
-	runtimeOnly group: 'net.runelite.jogl', name:'jogl-rl', version:'2.4.0-rc-20220318:natives-linux-amd64'
-	runtimeOnly group: 'net.runelite.jogl', name:'jogl-rl', version:'2.4.0-rc-20220318:natives-macosx-universal'
 }
 
 group = 'com.stevenwaterman.blindfold'
