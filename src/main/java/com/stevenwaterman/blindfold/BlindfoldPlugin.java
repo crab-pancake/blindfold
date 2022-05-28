@@ -288,6 +288,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 	private int needsReset;
 
+	private Player localPlayer;
+
 	private final ComponentListener resizeListener = new ComponentAdapter()
 	{
 		@Override
@@ -1512,6 +1514,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		switch (gameStateChanged.getGameState())
 		{
 			case LOGGED_IN:
+				localPlayer = client.getLocalPlayer();
+
 				if (computeMode != ComputeMode.NONE)
 				{
 					invokeOnMainThread(this::uploadScene);
@@ -1620,8 +1624,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	@Override
 	public void draw(Renderable renderable, int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash)
 	{
-		boolean render = renderable == client.getLocalPlayer();
-
 		if (computeMode == ComputeMode.NONE)
 		{
 			Model model = renderable instanceof Model ? (Model) renderable : renderable.getModel();
@@ -1641,7 +1643,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
-				if (!render) {
+				if (renderable != localPlayer)
+				{
 					return;
 				}
 
@@ -1673,7 +1676,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			model.calculateExtreme(orientation);
 			client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
-			if (!render) {
+			if (renderable != localPlayer)
+			{
 				return;
 			}
 
@@ -1713,7 +1717,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
-				if (!render) {
+				if (renderable != localPlayer)
+				{
 					return;
 				}
 
