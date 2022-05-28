@@ -1414,24 +1414,25 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 	private void uploadScene()
 	{
-		vertexBuffer.clear();
-		uvBuffer.clear();
-
-		sceneUploader.upload(client.getScene(), vertexBuffer, uvBuffer);
-
-		vertexBuffer.flip();
-		uvBuffer.flip();
-
-		IntBuffer vertexBuffer = this.vertexBuffer.getBuffer();
-		FloatBuffer uvBuffer = this.uvBuffer.getBuffer();
-
-		updateBuffer(sceneVertexBuffer, GL43C.GL_ARRAY_BUFFER, vertexBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
-		updateBuffer(sceneUvBuffer, GL43C.GL_ARRAY_BUFFER, uvBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
-
-		GL43C.glBindBuffer(GL43C.GL_ARRAY_BUFFER, 0);
-
-		vertexBuffer.clear();
-		uvBuffer.clear();
+		return;
+//		vertexBuffer.clear();
+//		uvBuffer.clear();
+//
+//		sceneUploader.upload(client.getScene(), vertexBuffer, uvBuffer);
+//
+//		vertexBuffer.flip();
+//		uvBuffer.flip();
+//
+//		IntBuffer vertexBuffer = this.vertexBuffer.getBuffer();
+//		FloatBuffer uvBuffer = this.uvBuffer.getBuffer();
+//
+//		updateBuffer(sceneVertexBuffer, GL43C.GL_ARRAY_BUFFER, vertexBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
+//		updateBuffer(sceneUvBuffer, GL43C.GL_ARRAY_BUFFER, uvBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
+//
+//		GL43C.glBindBuffer(GL43C.GL_ARRAY_BUFFER, 0);
+//
+//		vertexBuffer.clear();
+//		uvBuffer.clear();
 	}
 
 	/**
@@ -1497,6 +1498,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	@Override
 	public void draw(Renderable renderable, int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash)
 	{
+		boolean render = renderable == client.getLocalPlayer();
+
 		if (computeMode == ComputeMode.NONE)
 		{
 			Model model = renderable instanceof Model ? (Model) renderable : renderable.getModel();
@@ -1515,6 +1518,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
+
+				if (!render) {
+					return;
+				}
 
 				modelX = x + client.getCameraX2();
 				modelY = y + client.getCameraY2();
@@ -1543,6 +1550,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 			model.calculateExtreme(orientation);
 			client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
+
+			if (!render) {
+				return;
+			}
 
 			int tc = Math.min(MAX_TRIANGLE, model.getFaceCount());
 			int uvOffset = model.getUvBufferOffset();
@@ -1579,6 +1590,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
+
+				if (!render) {
+					return;
+				}
 
 				boolean hasUv = model.getFaceTextures() != null;
 
