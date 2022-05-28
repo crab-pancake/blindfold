@@ -10,7 +10,7 @@ repositories {
 	mavenCentral()
 }
 
-def runeLiteVersion = '1.8.7-SNAPSHOT'
+def runeLiteVersion = '1.8.21-SNAPSHOT'
 
 dependencies {
 	compileOnly group: 'net.runelite', name:'client', version: runeLiteVersion
@@ -23,9 +23,16 @@ dependencies {
 	testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion, {
 		exclude group: 'ch.qos.logback', module: 'logback-classic'
 	}
+
+	implementation 'net.runelite.jogl:jogl-rl:2.4.0-rc-20220318'
+	implementation 'net.runelite.jogl:jogl-gldesktop-dbg:2.4.0-rc-20220318'
+	runtime 'net.runelite.jogl:jogl-rl:2.4.0-rc-20220318:natives-windows-amd64'
+	runtime 'net.runelite.jogl:jogl-rl:2.4.0-rc-20220318:natives-windows-i586'
+	runtime 'net.runelite.jogl:jogl-rl:2.4.0-rc-20220318:natives-linux-amd64'
+	runtime 'net.runelite.jogl:jogl-rl:2.4.0-rc-20220318:natives-macosx-universal'
 }
 
-group = 'com.trevor.greenscreen'
+group = 'com.stevenwaterman.blindfold'
 version = '1.0'
 sourceCompatibility = '1.8'
 

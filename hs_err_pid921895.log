@@ -1,0 +1,21 @@
+#
+# A fatal error has been detected by the Java Runtime Environment:
+#
+#  SIGSEGV (0xb) at pc=0x00007fc5ac839f21, pid=921895, tid=921910
+#
+# JRE version: OpenJDK Runtime Environment Temurin-11.0.15+10 (11.0.15+10) (build 11.0.15+10)
+# Java VM: OpenJDK 64-Bit Server VM Temurin-11.0.15+10 (11.0.15+10, mixed mode, tiered, compressed oops, g1 gc, linux-amd64)
+# Problematic frame:
+# C  [libjimage.so+0x3f21]  ImageStrings::find(Endian*, char const*, int*, unsigned int)+0x71
+#
+# Core dump will be written. Default location: Core dumps may be processed with "/usr/share/apport/apport -p%p -s%s -c%c -d%d -P%P -u%u -g%g -- %E" (or dumping to /home/steven/IdeaProjects/runelite-external-plugins/core.921895)
+#
+# If you would like to submit a bug report, please visit:
+#   https://github.com/adoptium/adoptium-support/issues
+#
+
+---------------  S U M M A R Y ------------
+
+Command Line: -agentlib:jdwp=transport=dt_socket,server=n,suspend=y,address=127.0.0.1:34117 -Dfile.encoding=UTF-8 -Duser.country=GB -Duser.language=en -Duser.variant -ea com.stevenwaterman.blindfold.BlindfoldPluginTest
+
+Host: 

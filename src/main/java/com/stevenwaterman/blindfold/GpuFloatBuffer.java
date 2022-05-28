@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Adam <Adam@sigterm.info>
+ * Copyright (c) 2018, Adam <Adam@sigterm.info>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,17 +22,59 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package com.trevor.greenscreen;
+package com.stevenwaterman.blindfold;
 
-import lombok.Value;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
-/**
- * Represents a point in a three-dimensional space.
- */
-@Value
-public class Vertex
+class GpuFloatBuffer
 {
-	private final int x;
-	private final int y;
-	private final int z;
+	private FloatBuffer buffer = allocateDirect(65536);
+
+	void put(float texture, float u, float v, float pad)
+	{
+		buffer.put(texture).put(u).put(v).put(pad);
+	}
+
+	void flip()
+	{
+		buffer.flip();
+	}
+
+	void clear()
+	{
+		buffer.clear();
+	}
+
+	void ensureCapacity(int size)
+	{
+		int capacity = buffer.capacity();
+		final int position = buffer.position();
+		if ((capacity - position) < size)
+		{
+			do
+			{
+				capacity *= 2;
+			}
+			while ((capacity - position) < size);
+
+			FloatBuffer newB = allocateDirect(capacity);
+			buffer.flip();
+			newB.put(buffer);
+			buffer = newB;
+		}
+	}
+
+	FloatBuffer getBuffer()
+	{
+		return buffer;
+	}
+
+	static FloatBuffer allocateDirect(int size)
+	{
+		return ByteBuffer.allocateDirect(size * Float.BYTES)
+			.order(ByteOrder.nativeOrder())
+			.asFloatBuffer();
+	}
 }
