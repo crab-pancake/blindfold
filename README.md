@@ -1,2 +1,2 @@
-# Green Screen
-Adds a greenscreen, useful for content creators. Original author: I Yam Jeremy
+# Blindfold
+Run instead of the GPU plugin to only render your character and nothing else.
