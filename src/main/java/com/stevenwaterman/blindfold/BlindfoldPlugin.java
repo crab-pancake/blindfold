@@ -100,7 +100,8 @@ import static org.jocl.CL.clCreateFromGLBuffer;
 	name = "Blindfold",
 	description = "Stops things rendering",
 	enabledByDefault = false,
-	tags = {"fog", "draw distance"},
+	tags = {"blindfold", "blind", "black", "greenscreen"},
+	conflicts = "GPU",
 	loadInSafeMode = false
 )
 @Slf4j
