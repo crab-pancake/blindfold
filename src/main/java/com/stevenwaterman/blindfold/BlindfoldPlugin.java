@@ -65,17 +65,7 @@ import jogamp.nativewindow.SurfaceScaleUtils;
 import jogamp.nativewindow.jawt.x11.X11JAWTWindow;
 import jogamp.nativewindow.macosx.OSXUtil;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.BufferProvider;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.Model;
-import net.runelite.api.Perspective;
-import net.runelite.api.Renderable;
-import net.runelite.api.Scene;
-import net.runelite.api.SceneTileModel;
-import net.runelite.api.SceneTilePaint;
-import net.runelite.api.Texture;
-import net.runelite.api.TextureProvider;
+import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ResizeableChanged;
 import net.runelite.api.hooks.DrawCallbacks;
@@ -1232,16 +1222,13 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 		// Draw 3d scene
 		final GameState gameState = client.getGameState();
-		if (gameState.getState() >= GameState.LOADING.getState())
-		{
+		if (gameState.getState() >= GameState.LOADING.getState()) {
 			final TextureProvider textureProvider = client.getTextureProvider();
-			if (textureArrayId == -1)
-			{
+			if (textureArrayId == -1) {
 				// lazy init textures as they may not be loaded at plugin start.
 				// this will return -1 and retry if not all textures are loaded yet, too.
 				textureArrayId = textureManager.initTextureArray(textureProvider, gl);
-				if (textureArrayId > -1)
-				{
+				if (textureArrayId > -1) {
 					// if texture upload is successful, compute and set texture animations
 					float[] texAnims = textureManager.computeTextureAnimations(textureProvider);
 					gl.glUseProgram(glProgram);
@@ -1259,30 +1246,28 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			// Setup anisotropic filtering
 			final int anisotropicFilteringLevel = config.anisotropicFilteringLevel();
 
-			if (textureArrayId != -1 && lastAnisotropicFilteringLevel != anisotropicFilteringLevel)
-			{
+			if (textureArrayId != -1 && lastAnisotropicFilteringLevel != anisotropicFilteringLevel) {
 				textureManager.setAnisotropicFilteringLevel(textureArrayId, anisotropicFilteringLevel, gl);
 				lastAnisotropicFilteringLevel = anisotropicFilteringLevel;
 			}
 
-			if (client.isStretchedEnabled())
-			{
+			if (client.isStretchedEnabled()) {
 				Dimension dim = client.getStretchedDimensions();
 				renderCanvasHeight = dim.height;
 
 				double scaleFactorY = dim.getHeight() / canvasHeight;
-				double scaleFactorX = dim.getWidth()  / canvasWidth;
+				double scaleFactorX = dim.getWidth() / canvasWidth;
 
 				// Pad the viewport a little because having ints for our viewport dimensions can introduce off-by-one errors.
 				final int padding = 1;
 
 				// Ceil the sizes because even if the size is 599.1 we want to treat it as size 600 (i.e. render to the x=599 pixel).
 				renderViewportHeight = (int) Math.ceil(scaleFactorY * (renderViewportHeight)) + padding * 2;
-				renderViewportWidth  = (int) Math.ceil(scaleFactorX * (renderViewportWidth ))  + padding * 2;
+				renderViewportWidth = (int) Math.ceil(scaleFactorX * (renderViewportWidth)) + padding * 2;
 
 				// Floor the offsets because even if the offset is 4.9, we want to render to the x=4 pixel anyway.
-				renderHeightOff      = (int) Math.floor(scaleFactorY * (renderHeightOff)) - padding;
-				renderWidthOff       = (int) Math.floor(scaleFactorX * (renderWidthOff )) - padding;
+				renderHeightOff = (int) Math.floor(scaleFactorY * (renderHeightOff)) - padding;
+				renderWidthOff = (int) Math.floor(scaleFactorX * (renderWidthOff)) - padding;
 			}
 
 			glDpiAwareViewport(renderWidthOff, renderCanvasHeight - renderViewportHeight - renderHeightOff, renderViewportWidth, renderViewportHeight);
@@ -1301,8 +1286,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			gl.glUniform1f(uniSmoothBanding, config.smoothBanding() ? 0f : 1f);
 			gl.glUniform1i(uniColorBlindMode, config.colorBlindMode().ordinal());
 			gl.glUniform1f(uniTextureLightMode, config.brightTextures() ? 1f : 0f);
-			if (gameState == GameState.LOGGED_IN)
-			{
+			if (gameState == GameState.LOGGED_IN) {
 				// avoid textures animating during loading
 				gl.glUniform1i(uniTick, client.getGameCycle());
 			}
@@ -1332,15 +1316,11 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			gl.glBindVertexArray(vaoHandle);
 
 			int vertexBuffer, uvBuffer;
-			if (computeMode != ComputeMode.NONE)
-			{
-				if (computeMode == ComputeMode.OPENGL)
-				{
+			if (computeMode != ComputeMode.NONE) {
+				if (computeMode == ComputeMode.OPENGL) {
 					// Before reading the SSBOs written to from postDrawScene() we must insert a barrier
 					gl.glMemoryBarrier(gl.GL_SHADER_STORAGE_BARRIER_BIT);
-				}
-				else
-				{
+				} else {
 					// Wait for the command queue to finish, so that we know the compute is done
 					openCLManager.finish();
 				}
@@ -1348,9 +1328,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				// Draw using the output buffer of the compute
 				vertexBuffer = tmpOutBuffer.glBufferId;
 				uvBuffer = tmpOutUvBuffer.glBufferId;
-			}
-			else
-			{
+			} else {
 				// Only use the temporary buffers, which will contain the full scene
 				vertexBuffer = tmpVertexBuffer.glBufferId;
 				uvBuffer = tmpUvBuffer.glBufferId;
@@ -1557,24 +1535,25 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 	private void uploadScene()
 	{
-		vertexBuffer.clear();
-		uvBuffer.clear();
-
-		sceneUploader.upload(client.getScene(), vertexBuffer, uvBuffer);
-
-		vertexBuffer.flip();
-		uvBuffer.flip();
-
-		IntBuffer vertexBuffer = this.vertexBuffer.getBuffer();
-		FloatBuffer uvBuffer = this.uvBuffer.getBuffer();
-
-		updateBuffer(sceneVertexBuffer, GL_ARRAY_BUFFER, vertexBuffer.limit() * Integer.BYTES, vertexBuffer, GL_STATIC_COPY, CL_MEM_READ_ONLY);
-		updateBuffer(sceneUvBuffer, GL_ARRAY_BUFFER, uvBuffer.limit() * Float.BYTES, uvBuffer, GL_STATIC_COPY, CL_MEM_READ_ONLY);
-
-		gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-		vertexBuffer.clear();
-		uvBuffer.clear();
+		return;
+//		vertexBuffer.clear();
+//		uvBuffer.clear();
+//
+//		sceneUploader.upload(client.getScene(), vertexBuffer, uvBuffer);
+//
+//		vertexBuffer.flip();
+//		uvBuffer.flip();
+//
+//		IntBuffer vertexBuffer = this.vertexBuffer.getBuffer();
+//		FloatBuffer uvBuffer = this.uvBuffer.getBuffer();
+//
+//		updateBuffer(sceneVertexBuffer, GL_ARRAY_BUFFER, vertexBuffer.limit() * Integer.BYTES, vertexBuffer, GL_STATIC_COPY, CL_MEM_READ_ONLY);
+//		updateBuffer(sceneUvBuffer, GL_ARRAY_BUFFER, uvBuffer.limit() * Float.BYTES, uvBuffer, GL_STATIC_COPY, CL_MEM_READ_ONLY);
+//
+//		gl.glBindBuffer(GL_ARRAY_BUFFER, 0);
+//
+//		vertexBuffer.clear();
+//		uvBuffer.clear();
 	}
 
 	/**
@@ -1640,6 +1619,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	@Override
 	public void draw(Renderable renderable, int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash)
 	{
+		boolean render = renderable == client.getLocalPlayer();
+
 		if (computeMode == ComputeMode.NONE)
 		{
 			Model model = renderable instanceof Model ? (Model) renderable : renderable.getModel();
@@ -1658,6 +1639,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
+
+				if (!render) {
+					return;
+				}
 
 				modelX = x + client.getCameraX2();
 				modelY = y + client.getCameraY2();
@@ -1686,6 +1671,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 			model.calculateExtreme(orientation);
 			client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
+
+			if (!render) {
+				return;
+			}
 
 			int tc = Math.min(MAX_TRIANGLE, model.getFaceCount());
 			int uvOffset = model.getUvBufferOffset();
@@ -1722,6 +1711,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
+
+				if (!render) {
+					return;
+				}
 
 				boolean hasUv = model.getFaceTextures() != null;
 
