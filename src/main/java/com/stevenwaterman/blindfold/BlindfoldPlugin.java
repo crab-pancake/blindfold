@@ -249,7 +249,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	private int lastCanvasHeight;
 	private int lastStretchedCanvasWidth;
 	private int lastStretchedCanvasHeight;
-	private com.stevenwaterman.blindfold.config.AntiAliasingMode lastAntiAliasingMode;
+	private AntiAliasingMode lastAntiAliasingMode;
 	private int lastAnisotropicFilteringLevel = -1;
 
 	private int yaw;
@@ -1171,7 +1171,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		prepareInterfaceTexture(canvasWidth, canvasHeight);
 
 		// Setup anti-aliasing
-		final com.stevenwaterman.blindfold.config.AntiAliasingMode antiAliasingMode = config.antiAliasingMode();
+		final AntiAliasingMode antiAliasingMode = config.antiAliasingMode();
 		final boolean aaEnabled = antiAliasingMode != AntiAliasingMode.DISABLED;
 
 		if (aaEnabled)
@@ -1398,7 +1398,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		gl.glBindTexture(gl.GL_TEXTURE_2D, interfaceTexture);
 
 		// Use the texture bound in the first pass
-		final com.stevenwaterman.blindfold.config.UIScalingMode uiScalingMode = config.uiScalingMode();
+		final UIScalingMode uiScalingMode = config.uiScalingMode();
 		gl.glUseProgram(glUiProgram);
 		gl.glUniform1i(uniTex, 0);
 		gl.glUniform1i(uniTexSamplingMode, uiScalingMode.getMode());

@@ -68,7 +68,7 @@ public interface BlindfoldPluginConfig extends Config
 		description = "Configures the anti-aliasing mode",
 		position = 3
 	)
-	default com.stevenwaterman.blindfold.config.AntiAliasingMode antiAliasingMode()
+	default AntiAliasingMode antiAliasingMode()
 	{
 		return AntiAliasingMode.DISABLED;
 	}
@@ -79,7 +79,7 @@ public interface BlindfoldPluginConfig extends Config
 		description = "Sampling function to use for the UI in stretched mode",
 		position = 4
 	)
-	default com.stevenwaterman.blindfold.config.UIScalingMode uiScalingMode()
+	default UIScalingMode uiScalingMode()
 	{
 		return UIScalingMode.LINEAR;
 	}
@@ -131,7 +131,7 @@ public interface BlindfoldPluginConfig extends Config
 		description = "Adjusts colors to account for colorblindness",
 		position = 8
 	)
-	default com.stevenwaterman.blindfold.config.ColorBlindMode colorBlindMode()
+	default ColorBlindMode colorBlindMode()
 	{
 		return ColorBlindMode.NONE;
 	}
