@@ -190,4 +190,15 @@ public interface BlindfoldPluginConfig extends Config
 	{
 		return 60;
 	}
+
+	@ConfigItem(
+			keyName = "enableUI",
+			name = "Enable UI",
+			description = "Disable this to remove ALL UI elements from the screen. Useful as a greenscreen for content creation.",
+			position = 10
+	)
+	default boolean enableUi()
+	{
+		return true;
+	}
 }
