@@ -1269,7 +1269,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		tempUvOffset = 0;
 
 		// Texture on UI
-		drawUi(overlayColor, canvasHeight, canvasWidth);
+		if (config.enableUi()) {
+			drawUi(overlayColor, canvasHeight, canvasWidth);
+		}
+
 
 		awtContext.swapBuffers();
 
