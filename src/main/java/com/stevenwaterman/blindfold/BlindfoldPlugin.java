@@ -41,17 +41,7 @@ import javax.annotation.Nonnull;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.BufferProvider;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.Model;
-import net.runelite.api.Perspective;
-import net.runelite.api.Renderable;
-import net.runelite.api.Scene;
-import net.runelite.api.SceneTileModel;
-import net.runelite.api.SceneTilePaint;
-import net.runelite.api.Texture;
-import net.runelite.api.TextureProvider;
+import net.runelite.api.*;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
@@ -483,6 +473,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				log.debug("Rebuilding sync mode");
 				clientThread.invokeLater(this::setupSyncMode);
 			}
+
+//			if (configChanged.getKey().equals(""))
 		}
 	}
 
@@ -941,6 +933,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 							   SceneTilePaint paint, int tileZ, int tileX, int tileY,
 							   int zoom, int centerX, int centerY)
 	{
+		if (!config.enableTerrain()) return;
+
 		if (computeMode == ComputeMode.NONE)
 		{
 			targetBufferOffset += sceneUploader.upload(paint,
@@ -978,6 +972,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 							   SceneTileModel model, int tileZ, int tileX, int tileY,
 							   int zoom, int centerX, int centerY)
 	{
+		if (!config.enableTerrain()) return;
+
 		if (computeMode == ComputeMode.NONE)
 		{
 			targetBufferOffset += sceneUploader.upload(model,
@@ -1405,7 +1401,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			case LOGGED_IN:
 				if (computeMode != ComputeMode.NONE)
 				{
-					this.uploadScene();
+					uploadScene();
 					checkGLErrors();
 				}
 				break;
@@ -1417,25 +1413,24 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 	private void uploadScene()
 	{
-		return;
-//		vertexBuffer.clear();
-//		uvBuffer.clear();
-//
-//		sceneUploader.upload(client.getScene(), vertexBuffer, uvBuffer);
-//
-//		vertexBuffer.flip();
-//		uvBuffer.flip();
-//
-//		IntBuffer vertexBuffer = this.vertexBuffer.getBuffer();
-//		FloatBuffer uvBuffer = this.uvBuffer.getBuffer();
-//
-//		updateBuffer(sceneVertexBuffer, GL43C.GL_ARRAY_BUFFER, vertexBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
-//		updateBuffer(sceneUvBuffer, GL43C.GL_ARRAY_BUFFER, uvBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
-//
-//		GL43C.glBindBuffer(GL43C.GL_ARRAY_BUFFER, 0);
-//
-//		vertexBuffer.clear();
-//		uvBuffer.clear();
+		vertexBuffer.clear();
+		uvBuffer.clear();
+
+		sceneUploader.upload(client.getScene(), vertexBuffer, uvBuffer);
+
+		vertexBuffer.flip();
+		uvBuffer.flip();
+
+		IntBuffer vertexBuffer = this.vertexBuffer.getBuffer();
+		FloatBuffer uvBuffer = this.uvBuffer.getBuffer();
+
+		updateBuffer(sceneVertexBuffer, GL43C.GL_ARRAY_BUFFER, vertexBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
+		updateBuffer(sceneUvBuffer, GL43C.GL_ARRAY_BUFFER, uvBuffer, GL43C.GL_STATIC_COPY, CL_MEM_READ_ONLY);
+
+		GL43C.glBindBuffer(GL43C.GL_ARRAY_BUFFER, 0);
+
+		vertexBuffer.clear();
+		uvBuffer.clear();
 	}
 
 	/**
@@ -1501,7 +1496,15 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	@Override
 	public void draw(Renderable renderable, int orientation, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z, long hash)
 	{
-		boolean render = renderable == client.getLocalPlayer();
+		boolean render = config.enableDraw(); // TODO revert this;
+		if (renderable == client.getLocalPlayer()) render = true;
+		else if (config.enableScenery() && renderable instanceof Model) render = true;
+		else if (config.enableScenery() && renderable instanceof ModelData) render = true;
+		else if (config.enableScenery() && renderable instanceof GraphicsObject) render = true;
+		else if (config.enableScenery() && renderable instanceof DynamicObject) render = true;
+		else if (config.enableEntities() && renderable instanceof Projectile) render = true;
+		else if (config.enableEntities() && renderable instanceof TileItem) render = true;
+		else if (config.enableEntities() && renderable instanceof Actor) render = true;
 
 		if (computeMode == ComputeMode.NONE)
 		{
@@ -1522,9 +1525,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
-				if (!render) {
-					return;
-				}
+				if (!render) return;
 
 				modelX = x + client.getCameraX2();
 				modelY = y + client.getCameraY2();
@@ -1554,9 +1555,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			model.calculateExtreme(orientation);
 			client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
-			if (!render) {
-				return;
-			}
+			if (!render) return;
 
 			int tc = Math.min(MAX_TRIANGLE, model.getFaceCount());
 			int uvOffset = model.getUvBufferOffset();
@@ -1594,9 +1593,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
-				if (!render) {
-					return;
-				}
+				if (!render) return;
 
 				boolean hasUv = model.getFaceTextures() != null;
 

@@ -195,10 +195,54 @@ public interface BlindfoldPluginConfig extends Config
 			keyName = "enableUI",
 			name = "Enable UI",
 			description = "Disable this to remove ALL UI elements from the screen. Useful as a greenscreen for content creation.",
-			position = 10
+			position = 13
 	)
 	default boolean enableUi()
 	{
 		return true;
+	}
+
+	@ConfigItem(
+			keyName = "enableDraw",
+			name = "Enable Draw",
+			description = "Disable this to hide the terrain / landscape. Nothing will happen until you force new terrain to load by walking or teleporting away.",
+			position = 14
+	)
+	default boolean enableDraw()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "enableTerrain",
+			name = "Enable Terrain",
+			description = "Disable this to hide the terrain / landscape. Nothing will happen until you force new terrain to load by walking or teleporting away.",
+			position = 14
+	)
+	default boolean enableTerrain()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "enableScenery",
+			name = "Enable Scenery",
+			description = "Disable this to hide the scenery.",
+			position = 14
+	)
+	default boolean enableScenery()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "enableEntities",
+			name = "Enable Entities",
+			description = "Disable this to hide the terrain / landscape. Nothing will happen until you force new terrain to load by walking or teleporting away.",
+			position = 14
+	)
+	default boolean enableEntities()
+	{
+		return false;
 	}
 }
