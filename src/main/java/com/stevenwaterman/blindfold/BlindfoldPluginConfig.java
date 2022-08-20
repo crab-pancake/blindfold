@@ -234,15 +234,4 @@ public interface BlindfoldPluginConfig extends Config
 	{
 		return false;
 	}
-
-	@ConfigItem(
-			keyName = "ignoreForceShow",
-			name = "Ignore 'Always Show'",
-			description = "You can shift-right-click an object to show it through the blindfold. Tick this box to disable that feature.",
-			position = 17
-	)
-	default boolean ignoreForceShow()
-	{
-		return false;
-	}
 }
