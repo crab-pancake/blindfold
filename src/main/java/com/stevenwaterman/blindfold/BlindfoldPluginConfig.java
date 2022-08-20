@@ -194,7 +194,7 @@ public interface BlindfoldPluginConfig extends Config
 	@ConfigItem(
 			keyName = "enableUI",
 			name = "Enable UI",
-			description = "Disable this to remove ALL UI elements from the screen. Useful as a greenscreen for content creation.",
+			description = "Disable this to remove ALL interface elements from the screen. Useful as a greenscreen for content creation.",
 			position = 13
 	)
 	default boolean enableUi()
@@ -203,20 +203,9 @@ public interface BlindfoldPluginConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = "enableDraw",
-			name = "Enable Draw",
-			description = "Disable this to hide the terrain / landscape. Nothing will happen until you force new terrain to load by walking or teleporting away.",
-			position = 14
-	)
-	default boolean enableDraw()
-	{
-		return false;
-	}
-
-	@ConfigItem(
 			keyName = "enableTerrain",
 			name = "Enable Terrain",
-			description = "Disable this to hide the terrain / landscape. Nothing will happen until you force new terrain to load by walking or teleporting away.",
+			description = "Disable this to hide the terrain / landscape.",
 			position = 14
 	)
 	default boolean enableTerrain()
@@ -227,8 +216,8 @@ public interface BlindfoldPluginConfig extends Config
 	@ConfigItem(
 			keyName = "enableScenery",
 			name = "Enable Scenery",
-			description = "Disable this to hide the scenery.",
-			position = 14
+			description = "Disable this to hide the static scenery.",
+			position = 15
 	)
 	default boolean enableScenery()
 	{
@@ -238,10 +227,21 @@ public interface BlindfoldPluginConfig extends Config
 	@ConfigItem(
 			keyName = "enableEntities",
 			name = "Enable Entities",
-			description = "Disable this to hide the terrain / landscape. Nothing will happen until you force new terrain to load by walking or teleporting away.",
-			position = 14
+			description = "Disable this to hide NPCs, Players, projectiles, and ground items.",
+			position = 16
 	)
 	default boolean enableEntities()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+			keyName = "ignoreForceShow",
+			name = "Ignore 'Always Show'",
+			description = "You can shift-right-click an object to show it through the blindfold. Tick this box to disable that feature.",
+			position = 17
+	)
+	default boolean ignoreForceShow()
 	{
 		return false;
 	}
