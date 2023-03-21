@@ -24,13 +24,15 @@
  */
 package com.stevenwaterman.blindfold;
 
-import com.google.common.base.Strings;
 import com.google.common.primitives.Ints;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
-
-import java.awt.*;
+import com.stevenwaterman.blindfold.config.AntiAliasingMode;
+import com.stevenwaterman.blindfold.config.UIScalingMode;
+import com.stevenwaterman.blindfold.template.Template;
+import java.awt.Canvas;
+import java.awt.Dimension;
+import java.awt.GraphicsConfiguration;
+import java.awt.Image;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -38,20 +40,28 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.*;
-import java.util.List;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
-
-import lombok.AccessLevel;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.*;
+import net.runelite.api.Actor;
+import net.runelite.api.BufferProvider;
+import net.runelite.api.Client;
+import net.runelite.api.DynamicObject;
+import net.runelite.api.GameState;
+import net.runelite.api.GraphicsObject;
+import net.runelite.api.Model;
+import net.runelite.api.ModelData;
+import net.runelite.api.Perspective;
+import net.runelite.api.Projectile;
+import net.runelite.api.Renderable;
+import net.runelite.api.Scene;
+import net.runelite.api.SceneTileModel;
+import net.runelite.api.SceneTilePaint;
+import net.runelite.api.Texture;
+import net.runelite.api.TextureProvider;
+import net.runelite.api.TileItem;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -61,9 +71,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
-import com.stevenwaterman.blindfold.config.AntiAliasingMode;
-import com.stevenwaterman.blindfold.config.UIScalingMode;
-import com.stevenwaterman.blindfold.template.Template;
+import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.DrawManager;
 import net.runelite.client.util.OSType;
 import net.runelite.rlawt.AWTContext;
@@ -76,6 +84,7 @@ import org.lwjgl.opengl.GL43C;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.opengl.GLUtil;
 import org.lwjgl.system.Callback;
+import org.lwjgl.system.Configuration;
 
 @PluginDescriptor(
 	name = "Blindfold",
@@ -89,7 +98,7 @@ import org.lwjgl.system.Callback;
 public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 {
 	// This is the maximum number of triangles the compute shaders support
-	static final int MAX_TRIANGLE = 4096;
+	static final int MAX_TRIANGLE = 6144;
 	static final int SMALL_TRIANGLE_COUNT = 512;
 	private static final int FLAG_SCENE_BUFFER = Integer.MIN_VALUE;
 	private static final int DEFAULT_DISTANCE = 25;
@@ -98,6 +107,9 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 	@Inject
 	private Client client;
+
+	@Inject
+	private ClientUI clientUI;
 
 	@Inject
 	private OpenCLManager openCLManager;
@@ -148,7 +160,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			.add(GL43C.GL_COMPUTE_SHADER, "comp.glsl");
 
 	static final Shader SMALL_COMPUTE_PROGRAM = new Shader()
-			.add(GL43C.GL_COMPUTE_SHADER, "comp_small.glsl");
+			.add(GL43C.GL_COMPUTE_SHADER, "comp.glsl");
 
 	static final Shader UNORDERED_COMPUTE_PROGRAM = new Shader()
 			.add(GL43C.GL_COMPUTE_SHADER, "comp_unordered.glsl");
@@ -237,11 +249,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	private int viewportOffsetX;
 	private int viewportOffsetY;
 
-	// fields for non-compute draw
-	private boolean drawingModel;
-	private int modelX, modelY, modelZ;
-	private int modelOrientation;
-
 	// Uniforms
 	private int uniColorBlindMode;
 	private int uniUiColorBlindMode;
@@ -277,7 +284,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				fboSceneHandle = rboSceneHandle = -1; // AA FBO
 				targetBufferOffset = 0;
 				unorderedModels = smallModels = largeModels = 0;
-				drawingModel = false;
 
 				AWTContext.loadNatives();
 
@@ -302,6 +308,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 						? (OSType.getOSType() == OSType.MacOS ? ComputeMode.OPENCL : ComputeMode.OPENGL)
 						: ComputeMode.NONE;
 
+				// lwjgl defaults to lwjgl- + user.name, but this breaks if the username would cause an invalid path
+				// to be created, and also breaks if both 32 and 64 bit lwjgl versions try to run at once.
+				Configuration.SHARED_LIBRARY_EXTRACT_DIRECTORY.set("lwjgl-rl-" + System.getProperty("os.arch", "unknown"));
+
 				GL.createCapabilities();
 
 				log.info("Using device: {}", GL43C.glGetString(GL43C.GL_RENDERER));
@@ -318,6 +328,11 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				{
 					log.info("disabling compute shaders because OpenGL 4.3 is not available");
 					computeMode = ComputeMode.NONE;
+				}
+
+				if (computeMode == ComputeMode.NONE)
+				{
+					sceneUploader.initSortingBuffers();
 				}
 
 				lwjglInitted = true;
@@ -418,6 +433,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			client.setGpu(false);
 			client.setDrawCallbacks(null);
 			client.setUnlockedFps(false);
+
+			sceneUploader.releaseSortingBuffers();
 
 			if (lwjglInitted)
 			{
@@ -521,8 +538,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		checkGLErrors();
 	}
 
-	private void initProgram() throws ShaderException
-	{
+	private Template createTemplate(int threadCount, int facesPerThread){
 		String versionHeader = OSType.getOSType() == OSType.Linux ? LINUX_VERSION_HEADER : WINDOWS_VERSION_HEADER;
 		Template template = new Template();
 		template.add(key ->
@@ -531,17 +547,28 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			{
 				return versionHeader;
 			}
+			if ("thread_config".equals(key))
+			{
+				return "#define THREAD_COUNT " + threadCount + "\n" +
+					"#define FACES_PER_THREAD " + facesPerThread + "\n";
+			}
 			return null;
 		});
 		template.addInclude(BlindfoldPlugin.class);
+		return template;
+	}
+
+	private void initProgram() throws ShaderException
+	{
+		Template template = createTemplate(-1, -1);
 
 		glProgram = PROGRAM.compile(template);
 		glUiProgram = UI_PROGRAM.compile(template);
 
 		if (computeMode == ComputeMode.OPENGL)
 		{
-			glComputeProgram = COMPUTE_PROGRAM.compile(template);
-			glSmallComputeProgram = SMALL_COMPUTE_PROGRAM.compile(template);
+			glComputeProgram = COMPUTE_PROGRAM.compile(createTemplate(1024, 6));
+			glSmallComputeProgram = SMALL_COMPUTE_PROGRAM.compile(createTemplate(512, 1));
 			glUnorderedComputeProgram = UNORDERED_COMPUTE_PROGRAM.compile(template);
 		}
 		else if (computeMode == ComputeMode.OPENCL)
@@ -736,6 +763,15 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 	private void initAAFbo(int width, int height, int aaSamples)
 	{
+		if (OSType.getOSType() != OSType.MacOS)
+		{
+			final GraphicsConfiguration graphicsConfiguration = clientUI.getGraphicsConfiguration();
+			final AffineTransform transform = graphicsConfiguration.getDefaultTransform();
+
+			width = getScaledValue(transform.getScaleX(), width);
+			height = getScaledValue(transform.getScaleY(), height);
+		}
+
 		// Create and bind the FBO
 		fboSceneHandle = GL43C.glGenFramebuffers();
 		GL43C.glBindFramebuffer(GL43C.GL_FRAMEBUFFER, fboSceneHandle);
@@ -811,11 +847,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 	@Override
 	public void postDrawScene()
-	{
-		postDraw();
-	}
-
-	private void postDraw()
 	{
 		if (computeMode == ComputeMode.NONE)
 		{
@@ -1012,12 +1043,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		}
 	}
 
-	@Override
-	public void draw(int overlayColor)
-	{
-		drawFrame(overlayColor);
-	}
-
 	private void prepareInterfaceTexture(int canvasWidth, int canvasHeight)
 	{
 		if (canvasWidth != lastCanvasWidth || canvasHeight != lastCanvasHeight)
@@ -1050,7 +1075,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		GL43C.glBindTexture(GL43C.GL_TEXTURE_2D, 0);
 	}
 
-	private void drawFrame(int overlayColor)
+	@Override
+	public void draw(int overlayColor)
 	{
 		final int canvasHeight = client.getCanvasHeight();
 		final int canvasWidth = client.getCanvasWidth();
@@ -1253,10 +1279,21 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 		if (aaEnabled)
 		{
+			int width = lastStretchedCanvasWidth;
+			int height = lastStretchedCanvasHeight;
+
+			if (OSType.getOSType() != OSType.MacOS)
+			{
+				final GraphicsConfiguration graphicsConfiguration = clientUI.getGraphicsConfiguration();
+				final AffineTransform transform = graphicsConfiguration.getDefaultTransform();
+
+				width = getScaledValue(transform.getScaleX(), width);
+				height = getScaledValue(transform.getScaleY(), height);
+			}
+
 			GL43C.glBindFramebuffer(GL43C.GL_READ_FRAMEBUFFER, fboSceneHandle);
 			GL43C.glBindFramebuffer(GL43C.GL_DRAW_FRAMEBUFFER, awtContext.getFramebuffer(false));
-			GL43C.glBlitFramebuffer(0, 0, lastStretchedCanvasWidth, lastStretchedCanvasHeight,
-					0, 0, lastStretchedCanvasWidth, lastStretchedCanvasHeight,
+			GL43C.glBlitFramebuffer(0, 0, width, height, 0, 0, width, height,
 					GL43C.GL_COLOR_BUFFER_BIT, GL43C.GL_NEAREST);
 
 			// Reset
@@ -1364,11 +1401,10 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 		if (OSType.getOSType() != OSType.MacOS)
 		{
-			final Graphics2D graphics = (Graphics2D) canvas.getGraphics();
-			final AffineTransform t = graphics.getTransform();
+			final GraphicsConfiguration graphicsConfiguration = clientUI.getGraphicsConfiguration();
+			final AffineTransform t = graphicsConfiguration.getDefaultTransform();
 			width = getScaledValue(t.getScaleX(), width);
 			height = getScaledValue(t.getScaleY(), height);
-			graphics.dispose();
 		}
 
 		ByteBuffer buffer = ByteBuffer.allocateDirect(width * height * 4)
@@ -1532,24 +1568,14 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 					return;
 				}
 
-				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
-				if (!render) return;
-
-				modelX = x + client.getCameraX2();
-				modelY = y + client.getCameraY2();
-				modelZ = z + client.getCameraZ2();
-				modelOrientation = orientation;
-				int triangleCount = model.getFaceCount();
-				vertexBuffer.ensureCapacity(12 * triangleCount);
-				uvBuffer.ensureCapacity(12 * triangleCount);
-
-				drawingModel = true;
-
-				renderable.draw(orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
-
-				drawingModel = false;
+				targetBufferOffset += sceneUploader.pushSortedModel(
+					model, orientation,
+					pitchSin, pitchCos,
+					yawSin, yawCos,
+					x, y, z,
+					vertexBuffer, uvBuffer);
 			}
 		}
 		// Model may be in the scene buffer
@@ -1562,7 +1588,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 				return;
 			}
 
-			model.calculateExtreme(orientation);
 			client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
 			if (!render) return;
@@ -1600,7 +1625,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 					return;
 				}
 
-				model.calculateExtreme(orientation);
 				client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
 
 				if (!render) return;
@@ -1634,13 +1658,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	@Override
 	public boolean drawFace(Model model, int face)
 	{
-		if (!drawingModel)
-		{
-			return false;
-		}
-
-		targetBufferOffset += sceneUploader.pushFace(model, face, true, vertexBuffer, uvBuffer, modelX, modelY, modelZ, modelOrientation);
-		return true;
+		return false;
 	}
 
 	/**
@@ -1677,14 +1695,13 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		}
 		else
 		{
-			final Graphics2D graphics = (Graphics2D) canvas.getGraphics();
-			final AffineTransform t = graphics.getTransform();
+			final GraphicsConfiguration graphicsConfiguration = clientUI.getGraphicsConfiguration();
+			final AffineTransform t = graphicsConfiguration.getDefaultTransform();
 			GL43C.glViewport(
 					getScaledValue(t.getScaleX(), x),
 					getScaledValue(t.getScaleY(), y),
 					getScaledValue(t.getScaleX(), width),
 					getScaledValue(t.getScaleY(), height));
-			graphics.dispose();
 		}
 	}
 
