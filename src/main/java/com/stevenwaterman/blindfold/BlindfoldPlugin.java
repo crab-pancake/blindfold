@@ -61,12 +61,14 @@ import net.runelite.api.SceneTilePaint;
 import net.runelite.api.Texture;
 import net.runelite.api.TextureProvider;
 import net.runelite.api.TileItem;
+import net.runelite.api.events.FocusChanged;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.NotificationFired;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
@@ -90,7 +92,7 @@ import org.lwjgl.system.Configuration;
 	name = "Blindfold",
 	description = "Stops things rendering",
 	enabledByDefault = false,
-	tags = {"blindfold", "blind", "black", "greenscreen"},
+	tags = {"blindfold", "blind", "black", "greenscreen", "render", "gpu"},
 	conflicts = "GPU",
 	loadInSafeMode = false
 )
@@ -279,6 +281,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	private int nextSceneId;
 	private GpuIntBuffer nextSceneVertexBuffer;
 	private GpuFloatBuffer nextSceneTexBuffer;
+
+	private final DisableRenderCallbacks DISABLE_RENDERING = new DisableRenderCallbacks();
 
 	@Override
 	protected void startUp()
@@ -509,6 +513,31 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			}
 
 //			if (configChanged.getKey().equals(""))
+		}
+	}
+
+	@Subscribe
+	public void onFocusChanged(FocusChanged event)
+	{
+		if (client.getGameState() == GameState.LOGGED_IN && config.disableRendering() && !event.isFocused()){
+			clientThread.invoke(() -> client.setDrawCallbacks(DISABLE_RENDERING));
+			log.debug("Focus changed: rendering disabled");
+		}
+		else
+		{
+			if (client.getDrawCallbacks() == DISABLE_RENDERING)
+			{
+				clientThread.invoke(() -> client.setDrawCallbacks(this));
+				log.debug("Focus changed: rendering reenabled");
+			}
+		}
+	}
+
+	@Subscribe
+	public void onNotificationFired(NotificationFired event){
+		if (client.getDrawCallbacks() == DISABLE_RENDERING){
+			clientThread.invoke(() -> client.setDrawCallbacks(this));
+			log.debug("notification sent: rendering reenabled");
 		}
 	}
 
