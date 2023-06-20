@@ -234,4 +234,15 @@ public interface BlindfoldPluginConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+		keyName = "disableRendering",
+		name = "Disable rendering",
+		description = "Enable this to prevent the screen from rendering when unfocused",
+		position = 17
+	)
+	default boolean disableRendering()
+	{
+		return false;
+	}
 }
