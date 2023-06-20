@@ -30,12 +30,21 @@ import com.stevenwaterman.blindfold.config.UIScalingMode;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 
 @ConfigGroup(BlindfoldPluginConfig.GROUP)
 public interface BlindfoldPluginConfig extends Config
 {
 	String GROUP = "blindfold";
+
+	@ConfigSection(
+		name = "GPU Settings",
+		description = "Same as vanilla GPU plugin - copy over the settings",
+		position = 0,
+		closedByDefault = true
+	)
+	String GpuSection = "GPU";
 
 	@Range(
 		max = BlindfoldPlugin.MAX_DISTANCE
@@ -44,7 +53,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "drawDistance",
 		name = "Draw Distance",
 		description = "Draw distance. Requires compute shaders to be enabled.",
-		position = 1
+		position = 1,
+		section = GpuSection
 	)
 	default int drawDistance()
 	{
@@ -55,7 +65,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "smoothBanding",
 		name = "Remove Color Banding",
 		description = "Smooths out the color banding that is present in the CPU renderer",
-		position = 2
+		position = 2,
+		section = GpuSection
 	)
 	default boolean smoothBanding()
 	{
@@ -66,7 +77,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "antiAliasingMode",
 		name = "Anti Aliasing",
 		description = "Configures the anti-aliasing mode",
-		position = 3
+		position = 3,
+		section = GpuSection
 	)
 	default AntiAliasingMode antiAliasingMode()
 	{
@@ -77,7 +89,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "uiScalingMode",
 		name = "UI scaling mode",
 		description = "Sampling function to use for the UI in stretched mode",
-		position = 4
+		position = 4,
+		section = GpuSection
 	)
 	default UIScalingMode uiScalingMode()
 	{
@@ -91,7 +104,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "fogDepth",
 		name = "Fog depth",
 		description = "Distance from the scene edge the fog starts",
-		position = 5
+		position = 5,
+		section = GpuSection
 	)
 	default int fogDepth()
 	{
@@ -103,7 +117,8 @@ public interface BlindfoldPluginConfig extends Config
 		name = "Compute Shaders",
 		description = "Offloads face sorting to GPU, enabling extended draw distance. Requires plugin restart.",
 		warning = "This feature requires OpenGL 4.3 to use. Please check that your GPU supports this.\nRestart the plugin for changes to take effect.",
-		position = 6
+		position = 6,
+		section = GpuSection
 	)
 	default boolean useComputeShaders()
 	{
@@ -118,7 +133,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "anisotropicFilteringLevel",
 		name = "Anisotropic Filtering",
 		description = "Configures the anisotropic filtering level.",
-		position = 7
+		position = 7,
+		section = GpuSection
 	)
 	default int anisotropicFilteringLevel()
 	{
@@ -129,7 +145,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "colorBlindMode",
 		name = "Colorblindness Correction",
 		description = "Adjusts colors to account for colorblindness",
-		position = 8
+		position = 8,
+		section = GpuSection
 	)
 	default ColorBlindMode colorBlindMode()
 	{
@@ -140,7 +157,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "brightTextures",
 		name = "Bright Textures",
 		description = "Use old texture lighting method which results in brighter game textures",
-		position = 9
+		position = 9,
+		section = GpuSection
 	)
 	default boolean brightTextures()
 	{
@@ -151,7 +169,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "unlockFps",
 		name = "Unlock FPS",
 		description = "Removes the 50 FPS cap for camera movement",
-		position = 10
+		position = 10,
+		section = GpuSection
 	)
 	default boolean unlockFps()
 	{
@@ -169,7 +188,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "vsyncMode",
 		name = "Vsync Mode",
 		description = "Method to synchronize frame rate with refresh rate",
-		position = 11
+		position = 11,
+		section = GpuSection
 	)
 	default SyncMode syncMode()
 	{
@@ -180,7 +200,8 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "fpsTarget",
 		name = "FPS Target",
 		description = "Target FPS when unlock FPS is enabled and Vsync mode is OFF",
-		position = 12
+		position = 12,
+		section = GpuSection
 	)
 	@Range(
 		min = 1,
