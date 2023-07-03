@@ -25,14 +25,15 @@
 package com.stevenwaterman.blindfold;
 
 import com.google.inject.Provides;
+import java.util.HashSet;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.*;
 import net.runelite.api.hooks.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.PluginChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -67,49 +68,84 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	}
 
 	private DrawCallbacks interceptedDrawCallbacks;
+	private final HashSet<Plugin> interceptedPlugins = new HashSet<>();
 
 	@Override
 	protected void startUp()
 	{
 		overlayManager.add(overlay);
-		clientThread.invoke(this::interceptDrawCalls);
+		clientThread.invokeLater(this::interceptDrawCalls);
 	}
 
 	@Override
 	protected void shutDown()
 	{
 		overlayManager.remove(overlay);
-		clientThread.invoke(() -> {
-			var drawCallbacks = client.getDrawCallbacks();
-			if (drawCallbacks == this)
+		clientThread.invokeLater(() -> {
+			if (client.getDrawCallbacks() == this)
 				client.setDrawCallbacks(interceptedDrawCallbacks);
 			interceptedDrawCallbacks = null;
+			interceptedPlugins.clear();
 		});
 	}
 
 	@Subscribe
-	public void onClientTick(ClientTick clientTick)
+	public void onPluginChanged(PluginChanged pluginChanged)
 	{
-		interceptDrawCalls();
+		var plugin = pluginChanged.getPlugin();
+		if (plugin == this)
+			return;
+
+		// After another plugin has started or stopped,
+		// check whether draw calls need to be intercepted.
+		// We assume that other plugins are well-behaved,
+		// and that they only replace draw calls once each.
+		clientThread.invokeLater(() -> {
+			if (pluginChanged.isLoaded())
+			{
+				// This should never happen, but is probably worth ensuring
+				if (interceptedPlugins.contains(plugin))
+					return;
+
+				if (interceptDrawCalls())
+					interceptedPlugins.add(plugin);
+			}
+			else if (client.getDrawCallbacks() == null)
+			{
+				// Draw callbacks have been reset.
+				// Regardless of whether the plugin was previously intercepted,
+				// the chain is broken, and we should just reset everything
+				interceptedDrawCallbacks = null;
+				interceptedPlugins.clear();
+			}
+			else
+			{
+				// Assume the other plugin is well-behaved and will restore
+				// the draw callbacks to our prior intercepted state
+				interceptedPlugins.remove(plugin);
+			}
+		});
 	}
 
-	private void interceptDrawCalls()
+	private boolean interceptDrawCalls()
 	{
 		assert client.isClientThread();
 
+		// We only care about replacing draw callbacks while a GPU plugin is active
 		if (!client.isGpu())
-			return;
+			return false;
 
 		var drawCallbacks = client.getDrawCallbacks();
 		if (drawCallbacks == null)
-			return;
+			return false;
 
-		// Already intercepted
+		// Check if draw calls have already been intercepted, and are unchanged
 		if (drawCallbacks == this)
-			return;
+			return false;
 
 		interceptedDrawCallbacks = drawCallbacks;
 		client.setDrawCallbacks(this);
+		return true;
 	}
 
 	@Override
@@ -206,6 +242,9 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		int pitchSin, int pitchCos, int yawSin, int yawCos,
 		int x, int y, int z, long hash)
 	{
+		if (interceptedDrawCallbacks == null)
+			return;
+
 		boolean render =
 			renderable == client.getLocalPlayer() ||
 			config.enableScenery() && (
@@ -222,7 +261,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 
 		// skip rendering, but process clickbox if render == false
 
-		if (interceptedDrawCallbacks != null && render) {
+		if (render) {
 			interceptedDrawCallbacks.draw(
 				renderable, orientation,
 				pitchSin, pitchCos, yawSin, yawCos,
