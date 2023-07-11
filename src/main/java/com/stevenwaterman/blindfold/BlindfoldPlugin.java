@@ -74,7 +74,11 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	protected void startUp()
 	{
 		overlayManager.add(overlay);
-		clientThread.invokeLater(this::interceptDrawCalls);
+		clientThread.invokeLater(() -> {
+			// We want to specifically ignore the return value here, so RuneLite doesn't
+			// interpret this as something that needs to be retried until it returns true
+			interceptDrawCalls();
+		});
 	}
 
 	@Override
