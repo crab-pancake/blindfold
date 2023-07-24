@@ -26,6 +26,7 @@ package com.stevenwaterman.blindfold;
 
 import com.google.inject.Provides;
 import java.util.HashSet;
+import java.util.Objects;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Actor;
@@ -110,7 +111,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	{
 		overlayManager.remove(overlay);
 		clientThread.invokeLater(() -> {
-			if (client.getDrawCallbacks() == this)
+			if (client.getDrawCallbacks() == this || client.getDrawCallbacks() == DISABLE_RENDERING)
 				client.setDrawCallbacks(interceptedDrawCallbacks);
 			interceptedDrawCallbacks = null;
 			interceptedPlugins.clear();
@@ -219,6 +220,18 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		if (client.getDrawCallbacks() == DISABLE_RENDERING){
 			clientThread.invoke(() -> client.setDrawCallbacks(this));
 			log.debug("notification sent: rendering reenabled");
+		}
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event){
+		if (!Objects.equals(event.getGroup(), config.GROUP)){
+			return;
+		}
+		if (Objects.equals(event.getKey(), "disableRendering")){
+			if (Objects.equals(event.getNewValue(), "false") && client.getDrawCallbacks() == DISABLE_RENDERING){
+				clientThread.invoke(() -> client.setDrawCallbacks(this));
+			}
 		}
 	}
 

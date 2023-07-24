@@ -31,13 +31,13 @@ import net.runelite.client.config.ConfigItem;
 @ConfigGroup(BlindfoldPluginConfig.GROUP)
 public interface BlindfoldPluginConfig extends Config
 {
-	String GROUP = "blindfold";
+	public String GROUP = "blindfold";
 
 	@ConfigItem(
 			keyName = "enableUI",
 			name = "Enable UI",
 			description = "Disable this to remove ALL interface elements from the screen. Useful as a greenscreen for content creation.",
-			position = 13
+			position = 1
 	)
 	default boolean enableUi()
 	{
@@ -48,7 +48,7 @@ public interface BlindfoldPluginConfig extends Config
 			keyName = "enableTerrain",
 			name = "Enable Terrain",
 			description = "Disable this to hide the terrain / landscape.",
-			position = 14
+			position = 2
 	)
 	default boolean enableTerrain()
 	{
@@ -59,7 +59,7 @@ public interface BlindfoldPluginConfig extends Config
 			keyName = "enableScenery",
 			name = "Enable Scenery",
 			description = "Disable this to hide the static scenery.",
-			position = 15
+			position = 3
 	)
 	default boolean enableScenery()
 	{
@@ -70,7 +70,7 @@ public interface BlindfoldPluginConfig extends Config
 			keyName = "enableEntities",
 			name = "Enable Entities",
 			description = "Disable this to hide NPCs, Players, projectiles, and ground items.",
-			position = 16
+			position = 4
 	)
 	default boolean enableEntities()
 	{
@@ -81,7 +81,7 @@ public interface BlindfoldPluginConfig extends Config
 		keyName = "disableRendering",
 		name = "Disable rendering",
 		description = "Stops the screen from rendering when client is unfocused.<br>Rendering resumes when a notification is received.",
-		position = 17
+		position = 5
 	)
 	default boolean disableRendering()
 	{
