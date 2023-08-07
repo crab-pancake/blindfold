@@ -26,13 +26,30 @@ package com.stevenwaterman.blindfold;
 
 import com.google.inject.Provides;
 import java.util.HashSet;
+import java.util.Objects;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
-import net.runelite.api.hooks.*;
+import net.runelite.api.Actor;
+import net.runelite.api.Client;
+import net.runelite.api.DynamicObject;
+import net.runelite.api.GameState;
+import net.runelite.api.GraphicsObject;
+import net.runelite.api.Model;
+import net.runelite.api.ModelData;
+import net.runelite.api.Projectile;
+import net.runelite.api.Renderable;
+import net.runelite.api.Scene;
+import net.runelite.api.SceneTileModel;
+import net.runelite.api.SceneTilePaint;
+import net.runelite.api.Texture;
+import net.runelite.api.TileItem;
+import net.runelite.api.events.FocusChanged;
+import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.NotificationFired;
 import net.runelite.client.events.PluginChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -41,7 +58,7 @@ import net.runelite.client.ui.overlay.OverlayManager;
 @PluginDescriptor(
 	name = "Blindfold",
 	description = "Stops things rendering (requires GPU)",
-	tags = {"blindfold", "blind", "black", "greenscreen"}
+	tags = {"blindfold", "blind", "black", "greenscreen", "render"}
 )
 @Slf4j
 public class BlindfoldPlugin extends Plugin implements DrawCallbacks
@@ -70,6 +87,8 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	private DrawCallbacks interceptedDrawCallbacks;
 	private final HashSet<Plugin> interceptedPlugins = new HashSet<>();
 
+	private final DisableRenderCallbacks DISABLE_RENDERING = new DisableRenderCallbacks();
+
 	@Override
 	protected void startUp()
 	{
@@ -86,7 +105,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	{
 		overlayManager.remove(overlay);
 		clientThread.invokeLater(() -> {
-			if (client.getDrawCallbacks() == this)
+			if (client.getDrawCallbacks() == this || client.getDrawCallbacks() == DISABLE_RENDERING)
 				client.setDrawCallbacks(interceptedDrawCallbacks);
 			interceptedDrawCallbacks = null;
 			interceptedPlugins.clear();
@@ -171,6 +190,43 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		// Probably a no-op, but pass it on anyway
 		if (interceptedDrawCallbacks != null)
 			interceptedDrawCallbacks.animate(texture, diff);
+	}
+
+	@Subscribe
+	public void onFocusChanged(FocusChanged event)
+	{
+		if (client.getGameState() == GameState.LOGGED_IN && config.disableRendering() && !event.isFocused()){
+			clientThread.invoke(() -> client.setDrawCallbacks(DISABLE_RENDERING));
+			log.debug("Focus changed: rendering disabled");
+		}
+		else
+		{
+			if (client.getDrawCallbacks() == DISABLE_RENDERING)
+			{
+				clientThread.invoke(() -> client.setDrawCallbacks(this));
+				log.debug("Focus changed: rendering reenabled");
+			}
+		}
+	}
+
+	@Subscribe
+	public void onNotificationFired(NotificationFired event){
+		if (client.getDrawCallbacks() == DISABLE_RENDERING){
+			clientThread.invoke(() -> client.setDrawCallbacks(this));
+			log.debug("notification sent: rendering reenabled");
+		}
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged event){
+		if (!Objects.equals(event.getGroup(), config.GROUP)){
+			return;
+		}
+		if (Objects.equals(event.getKey(), "disableRendering")){
+			if (Objects.equals(event.getNewValue(), "false") && client.getDrawCallbacks() == DISABLE_RENDERING){
+				clientThread.invoke(() -> client.setDrawCallbacks(this));
+			}
+		}
 	}
 
 	@Override
