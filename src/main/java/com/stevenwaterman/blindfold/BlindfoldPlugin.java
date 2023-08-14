@@ -44,6 +44,7 @@ import net.runelite.api.SceneTilePaint;
 import net.runelite.api.Texture;
 import net.runelite.api.TileItem;
 import net.runelite.api.events.FocusChanged;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -112,6 +113,13 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		});
 	}
 
+//	@Subscribe
+//	public void onGameStateChanged(GameStateChanged e){
+//		if (e.getGameState() == GameState.LOGGED_IN){
+//
+//		}
+//	}
+
 	@Subscribe
 	public void onPluginChanged(PluginChanged pluginChanged)
 	{
@@ -163,7 +171,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			return false;
 
 		// Check if draw calls have already been intercepted, and are unchanged
-		if (drawCallbacks == this)
+		if (drawCallbacks == this || drawCallbacks == DISABLE_RENDERING)
 			return false;
 
 		interceptedDrawCallbacks = drawCallbacks;
