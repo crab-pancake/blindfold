@@ -296,15 +296,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
-	public boolean drawFace(Model model, int face)
-	{
-		// Probably a no-op, but pass it on anyway
-		if (interceptedDrawCallbacks != null)
-			return interceptedDrawCallbacks.drawFace(model, face);
-		return false;
-	}
-
-	@Override
 	public void draw(
 		Renderable renderable, int orientation,
 		int pitchSin, int pitchCos, int yawSin, int yawCos,
