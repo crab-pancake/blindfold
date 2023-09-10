@@ -162,6 +162,11 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	{
 		assert client.isClientThread();
 
+		// Don't attempt to intercept draw calls during loading, since switching config profiles
+		// may lead to multiple plugins modifying draw callbacks rapidly
+		if (client.getGameState() == GameState.LOADING)
+			return false;
+
 		// We only care about replacing draw callbacks while a GPU plugin is active
 		if (!client.isGpu())
 			return false;
