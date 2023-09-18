@@ -200,6 +200,14 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			interceptedDrawCallbacks.animate(texture, diff);
 	}
 
+	@Override
+	public boolean tileInFrustum(Scene scene, int pitchSin, int pitchCos, int yawSin, int yawCos, int cameraX, int cameraY, int cameraZ, int plane, int msx, int msy)
+	{
+		if (interceptedDrawCallbacks != null)
+			interceptedDrawCallbacks.tileInFrustum(scene, pitchSin, pitchCos, yawSin, yawCos, cameraX, cameraY, cameraZ, plane, msx, msy);
+		return true;
+	}
+
 	@Subscribe
 	public void onFocusChanged(FocusChanged event)
 	{
