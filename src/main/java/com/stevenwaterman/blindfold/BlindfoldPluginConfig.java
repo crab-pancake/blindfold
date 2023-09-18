@@ -78,10 +78,21 @@ public interface BlindfoldPluginConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "enableRuneLiteObjects",
+			name = "Show RuneLite Objects",
+			description = "Disable this to hide objects spawned in by RuneLite plugins.",
+			position = 5
+	)
+	default boolean enableRuneLiteObjects()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "disableRendering",
 		name = "Pause when unfocused",
 		description = "Stops the screen from rendering when client is unfocused.<br>Rendering resumes when a notification is received.",
-		position = 5
+		position = 6
 	)
 	default boolean disableRendering()
 	{
