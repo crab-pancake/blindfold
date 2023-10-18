@@ -38,13 +38,13 @@ import net.runelite.api.Model;
 import net.runelite.api.ModelData;
 import net.runelite.api.Projectile;
 import net.runelite.api.Renderable;
+import net.runelite.api.RuneLiteObject;
 import net.runelite.api.Scene;
 import net.runelite.api.SceneTileModel;
 import net.runelite.api.SceneTilePaint;
 import net.runelite.api.Texture;
 import net.runelite.api.TileItem;
 import net.runelite.api.events.FocusChanged;
-import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.hooks.DrawCallbacks;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -309,19 +309,21 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		if (interceptedDrawCallbacks == null)
 			return;
 
+		boolean isRuneLiteObject = renderable instanceof RuneLiteObject;
 		boolean render =
 			renderable == client.getLocalPlayer() ||
 			config.enableScenery() && (
 				renderable instanceof Model ||
 				renderable instanceof ModelData ||
-				renderable instanceof GraphicsObject ||
+				(!isRuneLiteObject && renderable instanceof GraphicsObject) ||
 				renderable instanceof DynamicObject
 			) ||
 			config.enableEntities() && (
 				renderable instanceof Projectile ||
 				renderable instanceof TileItem ||
 				renderable instanceof Actor
-			);
+			) ||
+			isRuneLiteObject && config.enableRuneLiteObjects();
 
 		// skip rendering, but process clickbox if render == false
 

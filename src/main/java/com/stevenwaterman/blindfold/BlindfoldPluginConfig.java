@@ -31,11 +31,11 @@ import net.runelite.client.config.ConfigItem;
 @ConfigGroup(BlindfoldPluginConfig.GROUP)
 public interface BlindfoldPluginConfig extends Config
 {
-	public String GROUP = "blindfold";
+	String GROUP = "blindfold";
 
 	@ConfigItem(
 			keyName = "enableUI",
-			name = "Enable UI",
+			name = "Show UI",
 			description = "Disable this to remove ALL interface elements from the screen. Useful as a greenscreen for content creation.",
 			position = 1
 	)
@@ -46,7 +46,7 @@ public interface BlindfoldPluginConfig extends Config
 
 	@ConfigItem(
 			keyName = "enableTerrain",
-			name = "Enable Terrain",
+			name = "Show Terrain",
 			description = "Disable this to hide the terrain / landscape.",
 			position = 2
 	)
@@ -57,7 +57,7 @@ public interface BlindfoldPluginConfig extends Config
 
 	@ConfigItem(
 			keyName = "enableScenery",
-			name = "Enable Scenery",
+			name = "Show Scenery",
 			description = "Disable this to hide the static scenery.",
 			position = 3
 	)
@@ -68,7 +68,7 @@ public interface BlindfoldPluginConfig extends Config
 
 	@ConfigItem(
 			keyName = "enableEntities",
-			name = "Enable Entities",
+			name = "Show Entities",
 			description = "Disable this to hide NPCs, Players, projectiles, and ground items.",
 			position = 4
 	)
@@ -78,10 +78,21 @@ public interface BlindfoldPluginConfig extends Config
 	}
 
 	@ConfigItem(
+			keyName = "enableRuneLiteObjects",
+			name = "Show RuneLite Objects",
+			description = "Disable this to hide objects spawned in by RuneLite plugins.",
+			position = 5
+	)
+	default boolean enableRuneLiteObjects()
+	{
+		return false;
+	}
+
+	@ConfigItem(
 		keyName = "disableRendering",
-		name = "Disable rendering",
+		name = "Pause when unfocused",
 		description = "Stops the screen from rendering when client is unfocused.<br>Rendering resumes when a notification is received.",
-		position = 5
+		position = 6
 	)
 	default boolean disableRendering()
 	{
