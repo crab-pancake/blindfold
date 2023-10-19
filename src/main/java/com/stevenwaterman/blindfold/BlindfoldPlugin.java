@@ -185,6 +185,13 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
+	public void drawScene(double cameraX, double cameraY, double cameraZ, double cameraPitch, double cameraYaw, int plane)
+	{
+		if (interceptedDrawCallbacks != null)
+			interceptedDrawCallbacks.drawScene(cameraX, cameraY, cameraZ, cameraPitch, cameraYaw, plane);
+	}
+
+	@Override
 	public void drawScene(int cameraX, int cameraY, int cameraZ, int cameraPitch, int cameraYaw, int plane)
 	{
 		if (interceptedDrawCallbacks != null)
