@@ -34,9 +34,11 @@ import net.runelite.api.Client;
 import net.runelite.api.DynamicObject;
 import net.runelite.api.GameState;
 import net.runelite.api.GraphicsObject;
+import net.runelite.api.IntProjection;
 import net.runelite.api.Model;
 import net.runelite.api.ModelData;
 import net.runelite.api.Projectile;
+import net.runelite.api.Projection;
 import net.runelite.api.Renderable;
 import net.runelite.api.RuneLiteObject;
 import net.runelite.api.Scene;
@@ -192,13 +194,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
-	public void drawScene(int cameraX, int cameraY, int cameraZ, int cameraPitch, int cameraYaw, int plane)
-	{
-		if (interceptedDrawCallbacks != null)
-			interceptedDrawCallbacks.drawScene(cameraX, cameraY, cameraZ, cameraPitch, cameraYaw, plane);
-	}
-
-	@Override
 	public void postDrawScene() {
 		if (interceptedDrawCallbacks != null)
 			interceptedDrawCallbacks.postDrawScene();
@@ -270,41 +265,15 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
-	public void drawScenePaint(
-		int orientation,
-		int pitchSin, int pitchCos, int yawSin, int yawCos,
-		int x, int y, int z,
-		SceneTilePaint paint,
-		int tileZ, int tileX, int tileY,
-		int zoom, int centerX, int centerY)
-	{
+	public void drawScenePaint(Scene scene, SceneTilePaint paint, int plane, int tileX, int tileY) {
 		if (interceptedDrawCallbacks != null && config.enableTerrain())
-			interceptedDrawCallbacks.drawScenePaint(
-				orientation,
-				pitchSin, pitchCos, yawSin, yawCos,
-				x, y, z, paint,
-				tileZ, tileX, tileY,
-				zoom, centerX, centerY
-			);
+			interceptedDrawCallbacks.drawScenePaint(scene, paint, plane, tileX, tileY);
 	}
 
 	@Override
-	public void drawSceneModel(
-		int orientation,
-		int pitchSin, int pitchCos, int yawSin, int yawCos,
-		int x, int y, int z,
-		SceneTileModel model,
-		int tileZ, int tileX, int tileY,
-		int zoom, int centerX, int centerY)
-	{
+	public void drawSceneTileModel(Scene scene, SceneTileModel model, int tileX, int tileY)	{
 		if (interceptedDrawCallbacks != null && config.enableTerrain())
-			interceptedDrawCallbacks.drawSceneModel(
-				orientation,
-				pitchSin, pitchCos, yawSin, yawCos,
-				x, y, z, model,
-				tileZ, tileX, tileY,
-				zoom, centerX, centerY
-			);
+			interceptedDrawCallbacks.drawSceneTileModel(scene, model, tileX, tileY);
 	}
 
 	@Override
@@ -316,10 +285,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
-	public void draw(
-		Renderable renderable, int orientation,
-		int pitchSin, int pitchCos, int yawSin, int yawCos,
-		int x, int y, int z, long hash)
+	public void draw(Projection projection, Scene scene, Renderable renderable, int orientation, int x, int y, int z, long hash)
 	{
 		if (interceptedDrawCallbacks == null)
 			return;
@@ -343,11 +309,7 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 		// skip rendering, but process clickbox if render == false
 
 		if (render) {
-			interceptedDrawCallbacks.draw(
-				renderable, orientation,
-				pitchSin, pitchCos, yawSin, yawCos,
-				x, y, z, hash
-			);
+			interceptedDrawCallbacks.draw(projection, scene, renderable, orientation, x, y, z, hash);
 		} else {
 			// Check the clickbox even if not drawn
 			Model model = renderable instanceof Model ? (Model) renderable : renderable.getModel();
@@ -358,10 +320,18 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 			if (model != renderable)
 				renderable.setModelHeight(model.getModelHeight());
 
-			if (!isVisible(model, pitchSin, pitchCos, yawSin, yawCos, x, y, z))
-				return;
+			model.calculateBoundsCylinder();
 
-			client.checkClickbox(model, orientation, pitchSin, pitchCos, yawSin, yawCos, x, y, z, hash);
+			if (projection instanceof IntProjection)
+			{
+				IntProjection p = (IntProjection) projection;
+				if (!isVisible(model, p.getPitchSin(), p.getPitchCos(), p.getYawSin(), p.getYawCos(), x - p.getCameraX(), y - p.getCameraY(), z - p.getCameraZ()))
+				{
+					return;
+				}
+			}
+
+			client.checkClickbox(projection, model, orientation, x, y, z, hash);
 		}
 	}
 
@@ -370,8 +340,6 @@ public class BlindfoldPlugin extends Plugin implements DrawCallbacks
 	 */
 	private boolean isVisible(Model model, int pitchSin, int pitchCos, int yawSin, int yawCos, int x, int y, int z)
 	{
-		model.calculateBoundsCylinder();
-
 		final int xzMag = model.getXYZMag();
 		final int bottomY = model.getBottomY();
 		final int zoom = client.get3dZoom();
